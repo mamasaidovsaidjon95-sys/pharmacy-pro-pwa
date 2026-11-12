@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#087f5b">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Pharmacy Pro</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#f0f4f5;
+ font-family:Arial,sans-serif;color:#24343a;
+}
+header{
+ background:#087f5b;color:white;
+ padding:22px 16px;border-radius:0 0 20px 20px;
+}
+header h2{margin:0 0 6px}
+header p{margin:0}
+.container{padding:15px;max-width:600px;margin:auto}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card,.box{
+ background:white;padding:16px;border-radius:13px;
+ margin-bottom:12px;box-shadow:0 2px 8px #0000000b;
+}
+.card strong{display:block;font-size:21px;margin-top:8px}
+button{
+ border:0;border-radius:9px;padding:12px;
+ background:#087f5b;color:white;font-weight:bold;
+ cursor:pointer;
+}
+input,select{
+ width:100%;padding:13px;margin:7px 0 12px;
+ border:1px solid #ccd5d8;border-radius:8px;
+ font-size:15px;background:white;
+}
+label{font-size:14px;font-weight:bold}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:15px}
+.nav button{background:#dce9e4;color:#087f5b}
+.nav button.active{background:#087f5b;color:white}
+.page{display:none}
+.page.active{display:block}
+.full{width:100%}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.item{border-bottom:1px solid #eee;padding:12px 0}
+.small{font-size:12px;color:#718087}
+.danger{background:#c0392b}
+.secondary{background:#52636a}
+table{width:100%;font-size:12px;border-collapse:collapse}
+td,th{padding:9px 4px;border-bottom:1px solid #eee;text-align:left}
+</style>
+</head>
+<body>
+
+<header>
+ <h2>💊 Pharmacy Pro</h2>
+ <p>Dorixona boshqaruv tizimi</p>
+</header>
+
+<div class="container">
+
+<div class="cards">
+ <div class="card">💊 Jami dorilar<strong id="total">0</strong></div>
+ <div class="card">📦 Jami qoldiq<strong id="stock">0</strong></div>
+ <div class="card">💰 Bugungi savdo<strong id="today">0</strong></div>
+ <div class="card">⚠️ Kam qolgan dorilar<strong id="low">0</strong></div>
+</div>
+
+<div class="nav">
+ <button class="active" onclick="show('home',this)">Bosh sahifa</button>
+ <button onclick="show('medicines',this)">Dorilar</button>
+ <button onclick="show('sales',this)">Savdo</button>
+ <button onclick="show('add',this)">+ Dori</button>
+ <button onclick="show('history',this)">Tarix</button>
+ <button onclick="show('report',this)">Hisobot</button>
+</div>
+
+<section id="home" class="page active">
+ <div class="box">
+  <h3>Assalomu alaykum!</h3>
+  <p>Pharmacy Pro dasturiga xush kelibsiz.</p>
+  <p class="small">Ma'lumotlar telefoningiz xotirasida saqlanadi.</p>
+ </div>
+ <div class="box">
+  <h3>Oxirgi savdolar</h3>
+  <div id="recent"></div>
+ </div>
+</section>
+
+<section id="medicines" class="page">
+ <div class="box">
+  <h3>📦 Dorilar ombori</h3>
+  <input id="search" placeholder="Dori nomini qidiring..." oninput="render()">
+  <div id="medicineList"></div>
+ </div>
+</section>
+
+<section id="add" class="page">
+ <div class="box">
+  <h3>➕ Yangi dori qo‘shish</h3>
+  <label>Dori nomi</label>
+  <input id="name" placeholder="Masalan: Paratsetamol">
+  <label>Shtrix-kod (ixtiyoriy)</label>
+  <input id="barcode" placeholder="Shtrix-kod">
+  <label>Xarid narxi (so‘m)</label>
+  <input id="buy" type="number" placeholder="0">
+  <label>Sotuv narxi (so‘m)</label>
+  <input id="price" type="number" placeholder="0">
+  <label>Miqdori (dona)</label>
+  <input id="qty" type="number" placeholder="0">
+  <button class="full" onclick="addMedicine()">Saqlash</button>
+ </div>
+</section>
+
+<section id="sales" class="page">
+ <div class="box">
+  <h3>💰 Dori sotish</h3>
+  <label>Dorini tanlang</label>
+  <select id="saleMedicine"></select>
+  <label>Sotiladigan miqdor</label>
+  <input id="saleQty" type="number" value="1" min="1">
+  <button class="full" onclick="sell()">Sotuvni amalga oshirish</button>
+ </div>
+</section>
+
+<section id="history" class="page">
+ <div class="box">
+  <h3>📋 Operatsiyalar tarixi</h3>
+  <div id="historyList"></div>
+ </div>
+</section>
+
+<section id="report" class="page">
+ <div class="box">
+  <h3>📊 Hisobot</h3>
+  <p>Jami sotuv: <b id="allSales">0</b> so‘m</p>
+  <p>Jami xarid qiymati: <b id="allBuy">0</b> so‘m</p>
+  <button class="full" onclick="exportCSV()">Excel uchun CSV yuklash</button>
+  <br><br>
+  <button class="full secondary" onclick="backup()">Zaxira nusxa olish</button>
+  <br><br>
+  <input type="file" id="restoreFile" accept=".json">
+  <button class="full secondary" onclick="restore()">Zaxira nusxani tiklash</button>
+ </div>
+</section>
+
+</div>
+
+<script>
+let meds=JSON.parse(localStorage.getItem("meds")||"[]");
+let history=JSON.parse(localStorage.getItem("history")||"[]");
+
+function save(){
+ localStorage.setItem("meds",JSON.stringify(meds));
+ localStorage.setItem("history",JSON.stringify(history));
+ render();
+}
+
+function show(id,btn){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
+ render();
+}
+
+function money(n){
+ return Number(n).toLocaleString("uz-UZ")+" so‘m";
+}
+
+function addMedicine(){
+ let name=document.getElementById("name").value.trim();
+ let barcode=document.getElementById("barcode").value.trim();
+ let buy=Number(document.getElementById("buy").value);
+ let price=Number(document.getElementById("price").value);
+ let qty=Number(document.getElementById("qty").value);
+
+ if(!name||buy<0||price<0||qty<=0||!Number.isInteger(qty)){
+  alert("Ma'lumotlarni to‘g‘ri kiriting!");
+  return;
+ }
+
+ let existing=meds.find(m=>m.name.toLowerCase()===name.toLowerCase());
+
+ if(existing){
+  existing.qty+=qty;
+  existing.buy=buy;
+  existing.price=price;
+ }else{
+  meds.push({id:Date.now(),name,barcode,buy,price,qty});
+ }
+
+ history.unshift({
+  type:"Kirim",name,qty,date:new Date().toISOString()
+ });
+
+ ["name","barcode","buy","price","qty"].forEach(id=>document.getElementById(id).value="");
+ save();
+ alert("Dori muvaffaqiyatli saqlandi!");
+}
+
+function sell(){
+ let id=Number(document.getElementById("saleMedicine").value);
+ let qty=Number(document.getElementById("saleQty").value);
+ let m=meds.find(x=>x.id===id);
+
+ if(!m||!Number.isInteger(qty)||qty<=0){
+  alert("Dori va miqdorni to‘g‘ri tanlang!");
+  return;
+ }
+ if(m.qty<qty){
+  alert("Omborda dori yetarli emas!");
+  return;
+ }
+
+ m.qty-=qty;
+ let total=m.price*qty;
+
+ history.unshift({
+  type:"Sotuv",name:m.name,qty,total,
+  date:new Date().toISOString()
+ });
+
+ save();
+ alert("Savdo bajarildi: "+money(total));
+}
+
+function render(){
+ let search=(document.getElementById("search")?.value||"").toLowerCase();
+
+ document.getElementById("total").textContent=meds.length;
+ document.getElementById("stock").textContent=meds.reduce((s,m)=>s+m.qty,0);
+ document.getElementById("low").textContent=meds.filter(m=>m.qty<=5).length;
+
+ let today=new Date().toDateString();
+ let todays=history.filter(h=>h.type==="Sotuv"&&new Date(h.date).toDateString()===today);
+ document.getElementById("today").textContent=money(todays.reduce((s,h)=>s+h.total,0));
+
+ document.getElementById("medicineList").innerHTML=meds
+ .filter(m=>m.name.toLowerCase().includes(search))
+ .map(m=>`
+ <div class="item">
+ <div class="row"><b>${escapeHTML(m.name)}</b>
+ <span>${m.qty} dona</span></div>
+ <p class="small">Sotuv: ${money(m.price)} | Xarid: ${money(m.buy)}</p>
+ <div class="row">
+ <button onclick="changeQty(${m.id})">Kirim</button>
+ <button class="danger" onclick="removeMedicine(${m.id})">O‘chirish</button>
+ </div></div>`).join("")||"Dori topilmadi";
+
+ document.getElementById("saleMedicine").innerHTML=
+ meds.filter(m=>m.qty>0).map(m=>
+ `<option value="${m.id}">${escapeHTML(m.name)} (${m.qty} dona)</option>`
+ ).join("")||"<option value=''>Dori mavjud emas</option>";
+
+ document.getElementById("historyList").innerHTML=history.slice(0,100).map(h=>`
+ <div class="item">
+ <b>${escapeHTML(h.name)}</b> — ${h.type}
+ <p class="small">${h.qty} dona | ${h.total?money(h.total):""}</p>
+ <span class="small">${new Date(h.date).toLocaleString("uz-UZ")}</span>
+ </div>`).join("")||"Tarix hozircha bo‘sh";
+
+ document.getElementById("recent").innerHTML=history.slice(0,5).map(h=>
+ `<p>${escapeHTML(h.name)} — ${h.type} (${h.qty} dona)</p>`
+ ).join("")||"Hozircha savdo yo‘q";
+
+ document.getElementById("allSales").textContent=money(
+ history.filter(h=>h.type==="Sotuv").reduce((s,h)=>s+(h.total||0),0)
+ );
+
+ document.getElementById("allBuy").textContent=money(
+ meds.reduce((s,m)=>s+m.buy*m.qty,0)
+ );
+}
+
+function changeQty(id){
+ let m=meds.find(x=>x.id===id);
+ let q=Number(prompt("Qancha dona kirim qilinadi?"));
+ if(!Number.isInteger(q)||q<=0)return;
+ m.qty+=q;
+ history.unshift({type:"Kirim",name:m.name,qty:q,date:new Date().toISOString()});
+ save();
+}
+
+function removeMedicine(id){
+ if(!confirm("Bu dorini o‘chirmoqchimisiz?"))return;
+ meds=meds.filter(m=>m.id!==id);
+ save();
+}
+
+function escapeHTML(s){
+ return String(s).replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ })[c]);
+}
+
+function download(name,data,type){
+ let blob=new Blob([data],{type});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download=name;
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+function backup(){
+ download("pharmacy-backup.json",
+ JSON.stringify({meds,history},null,2),"application/json");
+}
+
+function restore(){
+ let file=document.getElementById("restoreFile").files[0];
+ if(!file)return alert("Avval zaxira faylini tanlang!");
+ let reader=new FileReader();
+ reader.onload=()=>{
+ try{
+ let d=JSON.parse(reader.result);
+ if(!Array.isArray(d.meds)||!Array.isArray(d.history))throw Error();
+ if(!confirm("Hozirgi ma'lumotlar almashtiriladi. Davom etasizmi?"))return;
+ meds=d.meds;history=d.history;save();
+ alert("Zaxira tiklandi!");
+ }catch(e){alert("Zaxira fayli noto‘g‘ri!")}
+ };
+ reader.readAsText(file);
+}
+
+function exportCSV(){
+ let rows=[["Dori","Miqdor","Xarid narxi","Sotuv narxi"]];
+ meds.forEach(m=>rows.push([m.name,m.qty,m.buy,m.price]));
+ let csv="\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(";")).join("\n");
+ download("dorixona-hisoboti.csv",csv,"text/csv;charset=utf-8");
+}
+
+render();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.log("SW:", err)));
+}
+</script>
+</body>
+                         </html>
